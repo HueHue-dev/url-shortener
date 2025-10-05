@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ .Title }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+    <body class="bg-slate-950 min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg w-96">
+            <h1 class="text-2xl font-bold mb-4">{{ .Title }}</h1>
+            <form hx-post="/shorten" hx-target="#result" hx-swap="innerHTML">
+                <input
+                        type="url"
+                        name="url"
+                        placeholder="Enter URL"
+                        class="w-full p-2 border rounded mb-4"
+                        required
+                />
+                <button
+                        type="submit"
+                        class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                >
+                    Shorten URL
+                </button>
+            </form>
+            <div id="result">
+                {{template "result" .}}
+            </div>
+        </div>
+    </body>
+</html>
+
+{{define "result"}}
+    {{if .ShortenedURL}}
+    <div class="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <p>Shortened URL: <a href="{{.ShortenedURL}}" target="_blank" class="underline">{{.ShortenedURL}}</a></p>
+    </div>
+    {{end}}
+{{end}}

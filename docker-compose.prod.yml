@@ -1,0 +1,27 @@
+services:
+  cache:
+    image: redis:6.2.6-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - cache:/data
+
+  url-shortener:
+    image: ghcr.io/huehue-dev/url-shortener:latest
+    ports:
+      - '8080:8080'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_HOST: cache:6379
+      URL: ${URL}
+      TITLE: ${TITLE-Url Shortener}
+    depends_on:
+      - cache
+
+volumes:
+  cache:
+    driver: local
+  redis-insight:
+    driver: local

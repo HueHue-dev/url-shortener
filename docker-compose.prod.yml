@@ -23,5 +23,3 @@ services:
 volumes:
   cache:
     driver: local
-  redis-insight:
-    driver: local

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"url-shortener/store"
 	"url-shortener/utils"
 )
 
@@ -23,7 +24,7 @@ type PageData struct {
 var htmxTemplateName = "response"
 
 func main() {
-	redisClient := utils.RedisClient()
+	redisClient := store.RedisClient()
 	if redisClient == nil {
 		fmt.Println("Failed to connect to Redis")
 		return
@@ -70,7 +71,7 @@ func main() {
 		fmt.Println("Payload: ", url)
 		shortURL := alias
 		if alias != "" {
-			if _, err := utils.GetLongURL(&ctx, redisClient, alias); err == nil {
+			if _, err := store.GetLongURL(&ctx, redisClient, alias); err == nil {
 				errorMessage := "Alias already taken."
 				data := PageData{Title: os.Getenv("APP_TITLE"), Error: &errorMessage}
 				if err := tmpl.ExecuteTemplate(writer, htmxTemplateName, data); err != nil {
@@ -85,7 +86,7 @@ func main() {
 
 		fullShortURL := fmt.Sprintf(os.Getenv("APP_URI")+"r/%s", shortURL)
 
-		utils.SetKey(&ctx, redisClient, shortURL, url, expiration)
+		store.SetKey(&ctx, redisClient, shortURL, url, expiration)
 
 		expirationTime := time.Now().Add(expiration).Format("2006-01-02 15:04")
 		data := PageData{Title: os.Getenv("APP_TITLE"), ShortenedURL: &fullShortURL, ExpirationDate: &expirationTime}
@@ -103,7 +104,7 @@ func main() {
 			http.Error(writer, "Invalid URL", http.StatusBadRequest)
 			return
 		}
-		longURL, err := utils.GetLongURL(&ctx, redisClient, key)
+		longURL, err := store.GetLongURL(&ctx, redisClient, key)
 		if err != nil {
 			http.Error(writer, "Shortened URL not found", http.StatusNotFound)
 			return

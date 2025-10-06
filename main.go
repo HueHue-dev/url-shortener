@@ -50,6 +50,8 @@ func main() {
 			return
 		}
 
+		alias := req.FormValue("alias")
+
 		expirationStr := req.FormValue("expiration")
 		expirationDays, err := strconv.Atoi(expirationStr)
 		if err != nil || expirationDays < 1 {
@@ -64,7 +66,21 @@ func main() {
 		expiration := time.Duration(expirationDays) * 24 * time.Hour
 
 		fmt.Println("Payload: ", url)
-		shortURL := utils.GetShortCode()
+		shortURL := alias
+		if alias != "" {
+			if _, err := utils.GetLongURL(&ctx, redisClient, alias); err == nil {
+				errorMessage := "Alias already taken."
+				data := PageData{Title: os.Getenv("TITLE"), Error: &errorMessage}
+				if err := tmpl.ExecuteTemplate(writer, "result", data); err != nil {
+					http.Error(writer, "Failed to render template", http.StatusInternalServerError)
+				}
+
+				return
+			}
+		} else {
+			shortURL = utils.GetShortCode()
+		}
+
 		fullShortURL := fmt.Sprintf(os.Getenv("URL")+"r/%s", shortURL)
 
 		utils.SetKey(&ctx, redisClient, shortURL, url, expiration)

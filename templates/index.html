@@ -14,11 +14,24 @@
                 {{ template "result" . }}
             </div>
             <form hx-post="/shorten" hx-target="#result" hx-swap="innerHTML">
-                <div class="w-full">
+                <div class="w-full flex flex-col gap-4">
                     <div class="w-full min-w-[200px]">
-                        <input type="url" name="url" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-md px-3 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow" placeholder="Enter URL here" />
+                        <label for="url" class="block mb-2 text-sm text-slate-600">
+                            URL
+                        </label>
+                        <div class="w-full min-w-[200px]">
+                            <input id="url" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-md px-3 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow" placeholder="Enter Url here" name="url" />
+                        </div>
                     </div>
-                    <div class="w-full max-w-sm min-w-[200px] mt-4">
+                    <div class="w-full max-w-sm min-w-[200px]">
+                        <label for="alias" class="block mb-2 text-sm text-slate-600">
+                            Custom alias
+                        </label>
+                        <div class="w-full max-w-sm min-w-[200px]">
+                            <input id="alias" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-md px-3 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow" placeholder="Custom alias" name="alias" />
+                        </div>
+                    </div>
+                    <div class="w-full max-w-sm min-w-[200px]">
                         <label for="expiration" class="block mb-1 text-sm text-slate-800">Expiration</label>
                         <div class="relative">
                             <select name="expiration" id="expiration" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded pl-3 pr-8 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-400 shadow-sm focus:shadow-md appearance-none cursor-pointer">
@@ -32,7 +45,7 @@
                             </svg>
                         </div>
                     </div>
-                    <button type="submit" class="mt-4 rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none">
+                    <button type="submit" class="w-30 rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg hover:focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 hover:cursor-pointer active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none">
                         Shorten URL
                     </button>
                 </div>

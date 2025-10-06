@@ -15,8 +15,8 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_HOST: cache:6379
-      URL: ${URL}
-      TITLE: ${TITLE-Url Shortener}
+      APP_URI: ${APP_URI}
+      APP_TITLE: ${APP_TITLE-Url Shortener}
     depends_on:
       - cache
 

@@ -6,14 +6,17 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 	"url-shortener/utils"
 )
 
 var ctx = context.Background()
 
 type PageData struct {
-	Title        string
-	ShortenedURL *string
+	Title          string
+	ShortenedURL   *string
+	ExpirationDate *string
 }
 
 func main() {
@@ -34,13 +37,22 @@ func main() {
 
 	http.HandleFunc("/shorten", func(writer http.ResponseWriter, req *http.Request) {
 		url := req.FormValue("url")
+		expirationStr := req.FormValue("expiration")
+		expirationDays, err := strconv.Atoi(expirationStr)
+		if err != nil || expirationDays < 1 {
+			http.Error(writer, "Invalid expiration value", http.StatusBadRequest)
+			return
+		}
+		expiration := time.Duration(expirationDays) * 24 * time.Hour
+
 		fmt.Println("Payload: ", url)
 		shortURL := utils.GetShortCode()
 		fullShortURL := fmt.Sprintf(os.Getenv("URL")+"r/%s", shortURL)
 
-		utils.SetKey(&ctx, redisClient, shortURL, url, 0)
+		utils.SetKey(&ctx, redisClient, shortURL, url, expiration)
 
-		data := PageData{Title: os.Getenv("TITLE"), ShortenedURL: &fullShortURL}
+		expirationTime := time.Now().Add(expiration).Format("2006-01-02 15:04")
+		data := PageData{Title: os.Getenv("TITLE"), ShortenedURL: &fullShortURL, ExpirationDate: &expirationTime}
 		tmpl := template.Must(template.ParseFiles("templates/index.html"))
 
 		if err := tmpl.ExecuteTemplate(writer, "result", data); err != nil {

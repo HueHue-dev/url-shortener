@@ -15,13 +15,28 @@ import (
 var ctx = context.Background()
 
 type PageData struct {
+	Title string
+	Error *string
+}
+
+type ShortenUrlResponsePageData struct {
 	Title          string
-	ShortenedURL   *string
+	ShortURL       string
+	MetricsURL     string
 	ExpirationDate *string
 	Error          *string
 }
 
-var htmxTemplateName = "response"
+type MetricsPageData struct {
+	Title    string
+	ShortURL string
+	Metrics  Metrics
+	Error    *string
+}
+
+type Metrics struct {
+	Count int64
+}
 
 func main() {
 	redisClient := store.RedisClient()
@@ -42,25 +57,24 @@ func main() {
 
 	http.HandleFunc("/shorten", func(writer http.ResponseWriter, req *http.Request) {
 		tmpl := template.Must(template.ParseFiles("templates/index.html"))
-
 		url := req.FormValue("url")
 		if url == "" {
 			errorMessage := "The URL field cannot be empty."
 			data := PageData{Title: os.Getenv("APP_TITLE"), Error: &errorMessage}
-			if err := tmpl.ExecuteTemplate(writer, htmxTemplateName, data); err != nil {
+			if err := tmpl.Execute(writer, data); err != nil {
 				http.Error(writer, "Failed to render template", http.StatusInternalServerError)
 			}
 			return
 		}
 
-		alias := req.FormValue("alias")
+		shortAlias := req.FormValue("alias")
 
 		expirationStr := req.FormValue("expiration")
 		expirationDays, err := strconv.Atoi(expirationStr)
 		if err != nil || expirationDays < 1 {
 			errorMessage := "Invalid expiration value."
 			data := PageData{Title: os.Getenv("APP_TITLE"), Error: &errorMessage}
-			if err := tmpl.ExecuteTemplate(writer, htmxTemplateName, data); err != nil {
+			if err := tmpl.Execute(writer, data); err != nil {
 				http.Error(writer, "Failed to render template", http.StatusInternalServerError)
 			}
 
@@ -69,33 +83,40 @@ func main() {
 		expiration := time.Duration(expirationDays) * 24 * time.Hour
 
 		fmt.Println("Payload: ", url)
-		shortURL := alias
-		if alias != "" {
-			if _, err := store.GetLongURL(&ctx, redisClient, alias); err == nil {
+		if shortAlias != "" {
+			if _, err := store.GetLongURL(&ctx, redisClient, shortAlias); err == nil {
 				errorMessage := "Alias already taken."
 				data := PageData{Title: os.Getenv("APP_TITLE"), Error: &errorMessage}
-				if err := tmpl.ExecuteTemplate(writer, htmxTemplateName, data); err != nil {
+				if err := tmpl.Execute(writer, data); err != nil {
 					http.Error(writer, "Failed to render template", http.StatusInternalServerError)
 				}
 
 				return
 			}
 		} else {
-			shortURL = utils.GetShortCode()
+			shortAlias = utils.GetShortCode()
 		}
 
-		fullShortURL := fmt.Sprintf(os.Getenv("APP_URI")+"r/%s", shortURL)
+		shortURL := fmt.Sprintf(os.Getenv("APP_URI")+"r/%s", shortAlias)
+		metricsURL := fmt.Sprintf(os.Getenv("APP_URI")+"metrics/%s", shortAlias)
 
-		store.SetKey(&ctx, redisClient, shortURL, url, expiration)
+		store.SetKey(&ctx, redisClient, shortAlias, url, expiration)
 
 		expirationTime := time.Now().Add(expiration).Format("2006-01-02 15:04")
-		data := PageData{Title: os.Getenv("APP_TITLE"), ShortenedURL: &fullShortURL, ExpirationDate: &expirationTime}
+		data := ShortenUrlResponsePageData{
+			Title:          os.Getenv("APP_TITLE"),
+			ShortURL:       shortURL,
+			MetricsURL:     metricsURL,
+			ExpirationDate: &expirationTime,
+		}
 
-		if err := tmpl.ExecuteTemplate(writer, htmxTemplateName, data); err != nil {
+		tmpl = template.Must(template.ParseFiles("templates/shorten.html"))
+		if err := tmpl.Execute(writer, data); err != nil {
+			fmt.Println(err)
 			http.Error(writer, "Failed to render template", http.StatusInternalServerError)
 		}
 
-		fmt.Printf("Generated short URL: %s\n", shortURL)
+		fmt.Printf("Generated short URL: %s\n", shortAlias)
 	})
 
 	http.HandleFunc("/r/{code}", func(writer http.ResponseWriter, req *http.Request) {
@@ -109,7 +130,38 @@ func main() {
 			http.Error(writer, "Shortened URL not found", http.StatusNotFound)
 			return
 		}
+
+		store.IncrementMetric(&ctx, redisClient, key)
+
 		http.Redirect(writer, req, longURL, http.StatusPermanentRedirect)
+	})
+
+	http.HandleFunc("/metrics/{code}", func(writer http.ResponseWriter, req *http.Request) {
+		tmpl := template.Must(template.ParseFiles("templates/metrics.html"))
+		key := req.PathValue("code")
+		if key == "" {
+			http.Error(writer, "Invalid URL", http.StatusBadRequest)
+			return
+		}
+
+		if _, err := store.GetLongURL(&ctx, redisClient, key); err != nil {
+			http.Error(writer, "Shortened URL not found", http.StatusNotFound)
+			return
+		}
+
+		count, err := store.GetMetric(&ctx, redisClient, key)
+		if err != nil {
+			http.Error(writer, "Failed to get metrics", http.StatusInternalServerError)
+			return
+		}
+		shortURL := fmt.Sprintf(os.Getenv("APP_URI")+"r/%s", key)
+
+		metrics := Metrics{Count: count}
+		data := MetricsPageData{Title: os.Getenv("APP_TITLE"), ShortURL: shortURL, Metrics: metrics}
+
+		if err := tmpl.Execute(writer, data); err != nil {
+			http.Error(writer, "Failed to render template", http.StatusInternalServerError)
+		}
 	})
 
 	err := http.ListenAndServe(":8080", nil)

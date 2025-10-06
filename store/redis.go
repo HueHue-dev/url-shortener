@@ -41,3 +41,21 @@ func GetLongURL(ctx *context.Context, rdb *redis.Client, shortURL string) (strin
 
 	return longURL, nil
 }
+
+func IncrementMetric(ctx *context.Context, rdb *redis.Client, shortURL string) {
+	key := "metrics:" + shortURL
+	rdb.Incr(*ctx, key)
+}
+
+func GetMetric(ctx *context.Context, rdb *redis.Client, shortURL string) (int64, error) {
+	key := "metrics:" + shortURL
+	val, err := rdb.Get(*ctx, key).Int64()
+
+	if errors.Is(err, redis.Nil) {
+		return 0, nil
+	} else if err != nil {
+		return 0, err
+	}
+
+	return val, nil
+}

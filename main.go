@@ -26,6 +26,7 @@ func main() {
 		fmt.Println("Failed to connect to Redis")
 		return
 	}
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	http.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
 		tmpl := template.Must(template.ParseFiles("templates/index.html"))

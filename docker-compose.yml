@@ -12,6 +12,9 @@ services:
     build: .
     ports:
       - '8080:8080'
+    volumes:
+      - ./templates:/app/templates
+      - ./static:/app/static
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_HOST: cache:6379

@@ -1,4 +1,4 @@
-package utils
+package models
 
 import (
 	"encoding/base64"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func GetShortCode() string {
+func GetShortUrl() string {
 	ts := time.Now().UnixNano()
 	tsBytes := []byte(fmt.Sprintf("%d", ts))
 	key := base64.StdEncoding.EncodeToString(tsBytes)

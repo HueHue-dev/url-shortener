@@ -10,7 +10,11 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func RedisClient() *redis.Client {
+type Store struct {
+	redisClient *redis.Client
+}
+
+func NewRedisClient() *redis.Client {
 	fmt.Println("Connecting to redis server on:", os.Getenv("REDIS_HOST"))
 
 	rdb := redis.NewClient(&redis.Options{
@@ -19,19 +23,27 @@ func RedisClient() *redis.Client {
 		DB:       0,
 	})
 
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		panic(err)
+	}
+
 	fmt.Println("Connected to redis server on:", os.Getenv("REDIS_HOST"))
 
 	return rdb
 }
 
-func SetKey(ctx *context.Context, rdb *redis.Client, key string, value string, expiration time.Duration) {
+func NewStore(rdb *redis.Client) *Store {
+	return &Store{redisClient: rdb}
+}
+
+func (s *Store) SetKey(ctx context.Context, key string, value string, expiration time.Duration) {
 	fmt.Println("Setting key", key, "to", value, "in Redis")
-	rdb.Set(*ctx, key, value, expiration)
+	s.redisClient.Set(ctx, key, value, expiration)
 	fmt.Println("The key", key, "has been set to", value, " successfully")
 }
 
-func GetLongURL(ctx *context.Context, rdb *redis.Client, shortURL string) (string, error) {
-	longURL, err := rdb.Get(*ctx, shortURL).Result()
+func (s *Store) GetLongURL(ctx context.Context, shortURL string) (string, error) {
+	longURL, err := s.redisClient.Get(ctx, shortURL).Result()
 
 	if errors.Is(err, redis.Nil) {
 		return "", fmt.Errorf("short URL not found")
@@ -42,14 +54,14 @@ func GetLongURL(ctx *context.Context, rdb *redis.Client, shortURL string) (strin
 	return longURL, nil
 }
 
-func IncrementMetric(ctx *context.Context, rdb *redis.Client, shortURL string) {
+func (s *Store) IncrementMetric(ctx context.Context, shortURL string) {
 	key := "metrics:" + shortURL
-	rdb.Incr(*ctx, key)
+	s.redisClient.Incr(ctx, key)
 }
 
-func GetMetric(ctx *context.Context, rdb *redis.Client, shortURL string) (int64, error) {
+func (s *Store) GetMetric(ctx context.Context, shortURL string) (int64, error) {
 	key := "metrics:" + shortURL
-	val, err := rdb.Get(*ctx, key).Int64()
+	val, err := s.redisClient.Get(ctx, key).Int64()
 
 	if errors.Is(err, redis.Nil) {
 		return 0, nil

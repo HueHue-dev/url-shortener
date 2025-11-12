@@ -5,6 +5,8 @@ A simple and efficient URL shortening service built with Go and Redis.
 
 ## Features
 
+![Url-Shortener](url-shortener.png)
+
 - 🔗 Shorten long URLs to compact, shareable links
 - 📊 Track visit metrics for shortened URLs
 - ⚡ Fast Redis-based storage

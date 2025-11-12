@@ -1,0 +1,46 @@
+{{define "content"}}
+{{if .Error}}
+<div class="my-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+    <p>{{.Error}}</p>
+</div>
+{{end}}
+<form action="/shorten" method="POST">
+    <div class="w-full flex flex-col gap-4">
+        <div class="w-full min-w-[200px]">
+            <label for="url" class="block mb-2 text-sm text-slate-600">
+                URL
+            </label>
+            <div class="w-full min-w-[200px]">
+                <input id="url" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-md px-3 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow" placeholder="Enter Url here" name="url" />
+            </div>
+        </div>
+        <div class="w-full max-w-sm min-w-[200px]">
+            <label for="alias" class="block mb-2 text-sm text-slate-600">
+                Custom alias
+            </label>
+            <div class="w-full max-w-sm min-w-[200px]">
+                <input id="alias" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded-md px-3 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow" placeholder="Enter Custom alias here" name="alias" />
+            </div>
+        </div>
+        <div class="w-full max-w-sm min-w-[200px]">
+            <label for="expiration" class="block mb-2 text-sm text-slate-600">Expiration</label>
+            <div class="relative">
+                <select name="expiration" id="expiration" class="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-slate-200 rounded pl-3 pr-8 py-3 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-400 shadow-sm focus:shadow-md appearance-none cursor-pointer">
+                    <option value="1">1 day</option>
+                    <option value="7">7 days</option>
+                    <option value="30">1 month</option>
+                    <option value="365">1 year</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="h-5 w-5 ml-1 absolute top-3.5 right-2.5 text-slate-700">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                </svg>
+            </div>
+        </div>
+        <button type="submit" class="w-30 rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg hover:focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 hover:cursor-pointer active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none">
+            Shorten URL
+        </button>
+    </div>
+</form>
+{{end}}
+
+{{template "base" .}}

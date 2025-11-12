@@ -1,30 +1,44 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"url-shortener/handlers"
 	"url-shortener/store"
+
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, loggerError := zap.NewDevelopment()
+	if loggerError != nil {
+		log.Fatalf("Failed to initialize zap logger: %v", loggerError)
+	}
+	sugar := logger.Sugar()
+	sugar.Info("Starting server...")
+
 	redisClient := store.NewRedisClient()
 	if redisClient == nil {
-		fmt.Println("Failed to connect to Redis")
-		return
+		sugar.Fatal("Failed to connect to Redis")
 	}
-	s := store.NewStore(redisClient)
-	h := handlers.NewHandler(s)
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	redisStore := store.NewStore(redisClient)
+	templateHandler, err := handlers.NewTemplateHandler("frontend/templates")
+	if err != nil {
+		sugar.Fatalf("Failed to initialize template handler: %v", err)
+	}
 
-	http.HandleFunc("/", h.Index)
+	h := handlers.NewHandler(redisStore, templateHandler, sugar)
+
+	http.Handle("/frontend/static/", http.StripPrefix("/frontend/static/", http.FileServer(http.Dir("frontend/static"))))
+
+	http.HandleFunc("/", h.Home)
 	http.HandleFunc("/shorten", h.Shorten)
 	http.HandleFunc("/r/{code}", h.Redirect)
 	http.HandleFunc("/metrics/{code}", h.Metrics)
 
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		return
+	httpError := http.ListenAndServe(":8080", nil)
+	if httpError != nil {
+		sugar.Fatalf("Failed to start server: %v", httpError)
 	}
 }
